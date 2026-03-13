@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UNIT {
+  PEDERTRACTOR
+  TRACTOR
+}
+
+enum ACTION {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LIST
+}
+
+enum LOGACTIONS {
+  LOGIN
+  CREATE
+  DELETE
+  EDIT
+  LIST
+}
+
+model User {
+  id              Int               @id @default(autoincrement())
+  email           String?           @unique
+  cardNumber      String
+  unit            UNIT
+  password        String
+  employeeId      Int
+  employee        Employee          @relation(fields: [employeeId], references: [id])
+  firstLogin      Boolean           @default(true)
+  status          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  deletedAt       DateTime?
+  UserApplication UserApplication[]
+  auditLogs       AuditLogs[]
+
+  @@unique([cardNumber, unit])
+}
+
+model Application {
+  id              Int               @id @default(autoincrement())
+  appName         String            @unique
+  key             String            @unique @default(uuid())
+  revoked         Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  UserApplication UserApplication[]
+  auditLogs       AuditLogs[]
+  Role            Role[]
+}
+
+model Role {
+  id              Int               @id @default(autoincrement())
+  applicationId   Int
+  Application     Application       @relation(fields: [applicationId], references: [id])
+  name            String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  UserApplication UserApplication[]
+
+  @@unique([applicationId, name])
+}
+
+model UserApplication {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  User          User        @relation(fields: [userId], references: [id])
+  applicationId Int
+  Application   Application @relation(fields: [applicationId], references: [id])
+  roleId        Int
+  Role          Role        @relation(fields: [roleId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, applicationId])
+}
+
+model Part {
+  id            Int          @id @default(autoincrement())
+  partCode      String       @unique //id da view
+  partNumber    String
+  description   String?
+  group         String
+  client        String?
+  serverPath    String?
+  localPath     String?
+  review        String?
+  reviewChanged Boolean      @default(false)
+  status        Boolean      @default(true) // part obsolete or not
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt //this updated controll when a part becomes obsolete
+  PartImages    PartImages[]
+}
+
+model PartImages {
+  id          Int     @id @default(autoincrement())
+  partId      Int
+  Part        Part    @relation(fields: [partId], references: [id])
+  path        String
+  name        String?
+  ripSelected Boolean @default(false)
+  isDeletable Boolean @default(true)
+}
+
+//employees
+
+model Employee {
+  id          Int           @id @default(autoincrement())
+  name        String
+  cardNumber  String
+  unit        UNIT
+  status      Boolean       @default(false)
+  firstEntry  DateTime?
+  firstExit   DateTime?
+  secondEntry DateTime?
+  secondExit  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Leader      Leader?
+  Designation Designation[]
+  User        User[]
+}
+
+model Sector {
+  id                Int           @id @default(autoincrement())
+  name              String
+  costCenter        String        @unique
+  normalizedName    String
+  operationId       Int?
+  Operation         Operation?    @relation(fields: [operationId], references: [id])
+  leaderDayId       Int?
+  leaderDay         Leader?       @relation("LeaderDay", fields: [leaderDayId], references: [id])
+  leaderNightId     Int?
+  leaderNight       Leader?       @relation("LeaderNight", fields: [leaderNightId], references: [id])
+  supervisorDayId   Int?
+  supervisorDay     Leader?       @relation("SupervisorDay", fields: [supervisorDayId], references: [id])
+  supervisorNightId Int?
+  supervisorNight   Leader?       @relation("SupervisorNight", fields: [supervisorNightId], references: [id])
+  managerId         Int?
+  manager           Leader?       @relation("Manager", fields: [managerId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  Designation       Designation[]
+}
+
+model Operation {
+  id        Int       @id @default(autoincrement())
+  name      String
+  value     String    @unique
+  sector    Sector[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Position {
+  id             Int           @id @default(autoincrement())
+  value          String
+  name           String
+  normalizedName String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  Designation    Designation[]
+}
+
+model Leader {
+  id         Int       @id @default(autoincrement())
+  name       String
+  employeeId Int?      @unique
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  LeaderDay       Sector[] @relation("LeaderDay")
+  LeaderNight     Sector[] @relation("LeaderNight")
+  SupervisorDay   Sector[] @relation("SupervisorDay")
+  SupervisorNight Sector[] @relation("SupervisorNight")
+  Manager         Sector[] @relation("Manager")
+}
+
+model Designation {
+  id         Int       @id @default(autoincrement())
+  startDate  DateTime
+  endDate    DateTime?
+  employeeId Int
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  sectorId   Int
+  sector     Sector    @relation(fields: [sectorId], references: [id])
+  positionId Int
+  position   Position  @relation(fields: [positionId], references: [id])
+  leader     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model AuditLogs {
+  id            Int         @id @default(autoincrement())
+  userId        Int
+  User          User        @relation(fields: [userId], references: [id])
+  applicationId Int
+  Application   Application @relation(fields: [applicationId], references: [id])
+  date          DateTime    @default(now())
+  url           String?
+  action        LOGACTIONS
+  description   String
+}
