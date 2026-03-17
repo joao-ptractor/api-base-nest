@@ -1,11 +1,16 @@
+import { RequestApplication } from '@/modules/application/types/request-application.type';
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
 import { ApplicationService } from 'src/modules/application/application.service';
 
-interface ApplicationHeaders {
-  headers: {
-    key: string | undefined;
-    nameapplication: string | undefined;
-  };
+declare module 'express' {
+  interface Request {
+    headers: {
+      key: string;
+      nameapplication: string;
+    };
+    application: RequestApplication;
+  }
 }
 
 @Injectable()
@@ -13,7 +18,7 @@ export class ValidateApplicationGuard implements CanActivate {
   constructor(private readonly applicationService: ApplicationService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<ApplicationHeaders>();
+    const request = context.switchToHttp().getRequest<Request>();
 
     const key = request.headers.key;
     const nameapplication = request.headers.nameapplication;
@@ -31,6 +36,7 @@ export class ValidateApplicationGuard implements CanActivate {
       throw new UnauthorizedException('Invalid key or nameapplication');
     }
 
+    request.application = application;
     return true;
   }
 }
