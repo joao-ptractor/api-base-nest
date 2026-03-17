@@ -1,7 +1,7 @@
-import { RequestApplication } from '@/modules/application/types/request-application.type';
+import { ApplicationService } from '@/modules/application/application.service';
+import { RequestApplication } from '@/modules/application/types/request-application';
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
-import { ApplicationService } from 'src/modules/application/application.service';
 
 declare module 'express' {
   interface Request {

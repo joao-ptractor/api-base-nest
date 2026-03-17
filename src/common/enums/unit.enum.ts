@@ -1,0 +1,4 @@
+export enum Unit {
+  PEDERTRACTOR = 'PEDERTRACTOR',
+  TRACTOR = 'TRACTOR'
+}
